@@ -23,14 +23,15 @@ async function run() {
         const productsCollection = database.collection('products');
         const usersCollection = database.collection('users')
         const ordersCollection = database.collection('orders')
-
+        const reviewsCollection = database.collection("reviews")
 
         // get all products API
         app.get('/products', async (req, res) => {
             const cursor = productsCollection.find({})
             const products = await cursor.toArray();
             res.send(products)
-        })
+        });
+
 
         // get single product API
         app.get('/products/:id', async (req, res) => {
@@ -39,7 +40,8 @@ async function run() {
             const product = await productsCollection.findOne(query);
             res.json(product);
 
-        })
+        });
+
 
         // post user to DB
         app.post('/users', async (req, res) => {
@@ -56,14 +58,85 @@ async function run() {
             const result = await usersCollection.updateOne(filter, updateDoc, options);
             res.json(result);
 
-        })
+        });
         // post user to DB ends
+
+        // assign as admin
+        app.put('/users/admin', async (req, res) => {
+            const user = req.body;
+            console.log(user);
+            if (require) {
+                const filter = { email: user.email };
+                const updateDoc = { $set: { role: 'admin' } }
+                const result = await usersCollection.updateOne(filter, updateDoc);
+                res.json(result);
+            }
+            else {
+                res.status(403).json({ message: 'you do not have access to ake admin' })
+            }
+
+        });
+
+        // verify admin
+        app.get('/users/:email', async (req, res) => {
+            const email = req.params.email;
+            const query = { email };
+            let isAdmin = false;
+            const user = await usersCollection.findOne(query);
+            if (user?.role === 'admin') {
+                isAdmin = true;
+            }
+            res.json({ admin: isAdmin })
+        });
 
         // order post to DB
         app.post('/orders', async (req, res) => {
             const order = req.body;
             const result = await ordersCollection.insertOne(order);
             res.json(result);
+        });
+
+
+        // get all orders API
+        app.get('/orders/all', async (req, res) => {
+            const cursor = ordersCollection.find({})
+            const order = await cursor.toArray();
+            res.send(order);
+        });
+
+        // get one user's orders from DB
+        app.get('/orders', async (req, res) => {
+            const email = req.query.email;
+            console.log(email)
+            const query = { email }
+            const cursor = ordersCollection.find(query);
+            const orders = await cursor.toArray();
+            console.log(orders);
+            res.json(orders);
+        })
+
+        // delete order
+
+        app.delete('/orders/:id', async (req, res) => {
+            const id = req.params.id;
+            const query = { _id: ObjectId(id) };
+            const result = await ordersCollection.deleteOne(query);
+            res.json(result)
+        })
+
+        // post Review to DB
+        app.post('/reviews', async (req, res) => {
+            const review = req.body;
+            const result = await reviewsCollection.insertOne(review);
+            res.json(result);
+
+        })
+
+        // get reviews API
+        app.get('/reviews', async (req, res) => {
+            const cursor = reviewsCollection.find({})
+            const review = await cursor.toArray();
+            res.send(review);
         })
 
     }
