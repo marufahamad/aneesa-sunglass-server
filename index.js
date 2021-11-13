@@ -42,6 +42,13 @@ async function run() {
 
         });
 
+        // product post to DB
+        app.post('/products', async (req, res) => {
+            const order = req.body;
+            const result = await productsCollection.insertOne(order);
+            res.json(result);
+        });
+
 
         // post user to DB
         app.post('/users', async (req, res) => {
@@ -49,6 +56,7 @@ async function run() {
             const result = await usersCollection.insertOne(user);
             res.json(result);
         });
+
 
         app.put('/users', async (req, res) => {
             const user = req.body;
@@ -64,18 +72,15 @@ async function run() {
         // assign as admin
         app.put('/users/admin', async (req, res) => {
             const user = req.body;
-            console.log(user);
-            if (require) {
-                const filter = { email: user.email };
-                const updateDoc = { $set: { role: 'admin' } }
-                const result = await usersCollection.updateOne(filter, updateDoc);
-                res.json(result);
-            }
-            else {
-                res.status(403).json({ message: 'you do not have access to ake admin' })
-            }
+            const filter = { email: user.email };
+            const updateDoc = { $set: { role: 'admin' } }
+            const result = await usersCollection.updateOne(filter, updateDoc);
+            res.json(result);
+
 
         });
+
+        // 
 
         // verify admin
         app.get('/users/:email', async (req, res) => {
@@ -104,14 +109,26 @@ async function run() {
             res.send(order);
         });
 
+
+        // update status
+
+        app.put('/orders/update/:id', async (req, res) => {
+            const id = req.params.id;
+            const filter = { _id: ObjectId(id) };
+            const options = { upsert: true };
+            const updateDoc = { $set: { Status: 'Shipped' } }
+            const result = await ordersCollection.updateOne(filter, updateDoc, options);
+            res.json(result);
+        })
+
+
+
         // get one user's orders from DB
         app.get('/orders', async (req, res) => {
             const email = req.query.email;
-            console.log(email)
             const query = { email }
             const cursor = ordersCollection.find(query);
             const orders = await cursor.toArray();
-            console.log(orders);
             res.json(orders);
         })
 
@@ -121,6 +138,17 @@ async function run() {
             const id = req.params.id;
             const query = { _id: ObjectId(id) };
             const result = await ordersCollection.deleteOne(query);
+            res.json(result)
+        })
+
+
+
+        // delete products
+
+        app.delete('/products/:id', async (req, res) => {
+            const id = req.params.id;
+            const query = { _id: ObjectId(id) };
+            const result = await productsCollection.deleteOne(query);
             res.json(result)
         })
 
